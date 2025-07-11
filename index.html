@@ -312,9 +312,29 @@
           const canvas = document.getElementById("canvas");
           const context = canvas.getContext("2d");
 
-          canvas.width = video.videoWidth;
-          canvas.height = video.videoHeight;
-          context.drawImage(video, 0, 0, canvas.width, canvas.height);
+          let orientation =
+            (screen.orientation || {}).angle || window.orientation || 0;
+          let rotate90 = Math.abs(orientation) === 90;
+
+          if (rotate90) {
+            canvas.width = video.videoHeight;
+            canvas.height = video.videoWidth;
+            context.save();
+            context.translate(canvas.width / 2, canvas.height / 2);
+            context.rotate(((orientation === 90 ? -1 : 1) * Math.PI) / 2);
+            context.drawImage(
+              video,
+              -video.videoWidth / 2,
+              -video.videoHeight / 2,
+              video.videoWidth,
+              video.videoHeight
+            );
+            context.restore();
+          } else {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+          }
 
           capturedImage.src = canvas.toDataURL("image/jpeg");
           capturedImage.style.display = "block";
@@ -323,7 +343,7 @@
           captureBtn.style.display = "none";
           acceptBtn.style.display = "block";
           retakeBtn.style.display = "block";
-          switchBtn.style.display = "none"; // 👈 Hides the switch camera button
+          switchBtn.style.display = "none";
 
           canvas.toBlob(
             function (blob) {
