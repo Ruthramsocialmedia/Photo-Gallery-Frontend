@@ -120,6 +120,10 @@
         margin-top: 10px;
       }
 
+      #video.mirror {
+        transform: scaleX(-1);
+      }
+
       /* Camera related styles */
       #cameraContainer {
         display: none;
@@ -302,6 +306,7 @@
         acceptBtn.style.display = "none";
         retakeBtn.style.display = "none";
         switchBtn.style.display = "inline-block";
+        video.classList.toggle("mirror", usingFrontCamera);
 
         startCamera(usingFrontCamera ? "user" : "environment");
 
@@ -314,21 +319,24 @@
           const canvas = document.getElementById("canvas");
           const context = canvas.getContext("2d");
 
-          const videoWidth = video.videoWidth;
-          const videoHeight = video.videoHeight;
+          const isFront = usingFrontCamera;
+          const vw = video.videoWidth;
+          const vh = video.videoHeight;
 
-          canvas.width = videoWidth;
-          canvas.height = videoHeight;
+          // Always treat portrait as default orientation
+          canvas.width = vw;
+          canvas.height = vh;
 
-          // Mirror for front camera
-          if (usingFrontCamera) {
-            context.save();
+          context.save();
+
+          if (isFront) {
+            // Flip horizontally for front cam
+            context.translate(canvas.width, 0);
             context.scale(-1, 1);
-            context.drawImage(video, -videoWidth, 0, videoWidth, videoHeight);
-            context.restore();
-          } else {
-            context.drawImage(video, 0, 0, videoWidth, videoHeight);
           }
+
+          context.drawImage(video, 0, 0, vw, vh);
+          context.restore();
 
           capturedImage.src = canvas.toDataURL("image/jpeg");
           capturedImage.style.display = "block";
@@ -339,20 +347,10 @@
           retakeBtn.style.display = "block";
           switchBtn.style.display = "none";
 
+          // Use canvas blob directly (no EXIF needed)
           canvas.toBlob(
             function (blob) {
-              // Auto-fix orientation with Compressor.js
-              new Compressor(blob, {
-                quality: 0.95,
-                convertSize: 5000000,
-                success(result) {
-                  capturedImageBlob = result;
-                },
-                error(err) {
-                  console.error("Compression failed:", err.message);
-                  capturedImageBlob = blob; // fallback
-                },
-              });
+              capturedImageBlob = blob;
             },
             "image/jpeg",
             0.95
