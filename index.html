@@ -191,6 +191,7 @@
         <canvas id="canvas"></canvas>
         <div class="camera-buttons">
             <button id="captureBtn">Take Photo</button>
+            <button id="switchCameraBtn">Switch Camera</button>
             <button id="acceptBtn" style="display: none;">Use Photo</button>
             <button id="retakeBtn" style="display: none;">Retake</button>
             <button id="closeCamera">Close</button>
@@ -207,225 +208,216 @@
         <button onclick="closePopup()">Cancel</button>
     </div>
 
-    <script>
-        let userLocation = null;
-        let locationAllowed = false;
-        let capturedImageBlob = null;
-        let stream = null;
+  <script>
+    let userLocation = null;
+    let locationAllowed = false;
+    let capturedImageBlob = null;
+    let stream = null;
+    let usingFrontCamera = false; // NEW: Tracks camera state
 
-        // Check geolocation on page load
-        window.onload = function() {
-            if ("geolocation" in navigator) {
-                document.getElementById("locationWarning").style.display = "block";
-                navigator.geolocation.getCurrentPosition(function(position) {
-                    userLocation = {
-                        latitude: position.coords.latitude,
-                        longitude: position.coords.longitude
-                    };
-                    
-                    // Fetch location details from backend
-                    fetch(`https://photo-gallery-xndq.onrender.com/get-location-details?lat=${userLocation.latitude}&lon=${userLocation.longitude}`)
-                        .then(response => response.json())
-                        .then(data => {
-                            locationAllowed = true;
-                            document.getElementById("locationStatus").innerText = 
-                                `Location: ${data.city}, ${data.district}, ${data.state}, ${data.country}`;
-                            document.getElementById("locationWarning").style.display = "none";
-                            document.getElementById("uploadButton").disabled = false;
-                        })
-                        .catch(error => {
-                            document.getElementById("locationStatus").innerText = 
-                                "Failed to retrieve location details";
-                        });
-                }, function(error) {
-                    document.getElementById("locationStatus").innerText = 
-                        "Location access denied";
-                    document.getElementById("locationWarning").style.display = "block";
-                    document.getElementById("uploadButton").disabled = true;
-                });
-            } else {
-                document.getElementById("locationStatus").innerText = 
-                    "Geolocation is not supported by this browser";
+    window.onload = function () {
+        if ("geolocation" in navigator) {
+            document.getElementById("locationWarning").style.display = "block";
+            navigator.geolocation.getCurrentPosition(function (position) {
+                userLocation = {
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude
+                };
+
+                fetch(`https://photo-gallery-xndq.onrender.com/get-location-details?lat=${userLocation.latitude}&lon=${userLocation.longitude}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        locationAllowed = true;
+                        document.getElementById("locationStatus").innerText =
+                            `Location: ${data.city}, ${data.district}, ${data.state}, ${data.country}`;
+                        document.getElementById("locationWarning").style.display = "none";
+                        document.getElementById("uploadButton").disabled = false;
+                    })
+                    .catch(error => {
+                        document.getElementById("locationStatus").innerText =
+                            "Failed to retrieve location details";
+                    });
+            }, function (error) {
+                document.getElementById("locationStatus").innerText =
+                    "Location access denied";
                 document.getElementById("locationWarning").style.display = "block";
                 document.getElementById("uploadButton").disabled = true;
-            }
+            });
+        } else {
+            document.getElementById("locationStatus").innerText =
+                "Geolocation is not supported by this browser";
+            document.getElementById("locationWarning").style.display = "block";
+            document.getElementById("uploadButton").disabled = true;
+        }
+    };
+
+    function openPopup() {
+        if (!locationAllowed) {
+            alert("Please allow location access to upload images!");
+            return;
+        }
+        document.getElementById("popupForm").style.display = "block";
+        document.getElementById("popupOverlay").style.display = "block";
+    }
+
+    function closePopup() {
+        document.getElementById("popupForm").style.display = "none";
+        document.getElementById("popupOverlay").style.display = "none";
+        document.getElementById("username").value = "";
+        document.getElementById("email").value = "";
+        document.getElementById("imageInput").value = "";
+    }
+
+    function openBrowserCamera() {
+        const cameraContainer = document.getElementById('cameraContainer');
+        const video = document.getElementById('video');
+        const captureBtn = document.getElementById('captureBtn');
+        const acceptBtn = document.getElementById('acceptBtn');
+        const retakeBtn = document.getElementById('retakeBtn');
+        const closeBtn = document.getElementById('closeCamera');
+        const switchBtn = document.getElementById('switchCameraBtn');
+        const capturedImage = document.getElementById('capturedImage');
+
+        cameraContainer.style.display = 'block';
+        video.style.display = 'block';
+        capturedImage.style.display = 'none';
+        captureBtn.style.display = 'block';
+        acceptBtn.style.display = 'none';
+        retakeBtn.style.display = 'none';
+        switchBtn.style.display = 'inline-block';
+
+        startCamera(usingFrontCamera ? "user" : "environment");
+
+        closeBtn.onclick = function () {
+            closeCameraStream();
+            cameraContainer.style.display = 'none';
         };
 
-        function openPopup() {
-            if (!locationAllowed) {
-                alert("Please allow location access to upload images!");
-                return;
-            }
-            document.getElementById("popupForm").style.display = "block";
-            document.getElementById("popupOverlay").style.display = "block";
-        }
+        captureBtn.onclick = function () {
+            const canvas = document.getElementById('canvas');
+            const context = canvas.getContext('2d');
 
-        function closePopup() {
-            document.getElementById("popupForm").style.display = "none";
-            document.getElementById("popupOverlay").style.display = "none";
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-            document.getElementById("username").value = "";
-            document.getElementById("email").value = "";
-            document.getElementById("imageInput").value = "";
-        }
+            capturedImage.src = canvas.toDataURL('image/jpeg');
+            capturedImage.style.display = 'block';
+            video.style.display = 'none';
 
-        // Open camera in browser
-        function openBrowserCamera() {
-            const cameraContainer = document.getElementById('cameraContainer');
-            const video = document.getElementById('video');
-            const captureBtn = document.getElementById('captureBtn');
-            const acceptBtn = document.getElementById('acceptBtn');
-            const retakeBtn = document.getElementById('retakeBtn');
-            const closeBtn = document.getElementById('closeCamera');
-            const capturedImage = document.getElementById('capturedImage');
+            captureBtn.style.display = 'none';
+            acceptBtn.style.display = 'block';
+            retakeBtn.style.display = 'block';
 
-            cameraContainer.style.display = 'block';
-            video.style.display = 'block';
+            canvas.toBlob(function (blob) {
+                capturedImageBlob = blob;
+            }, 'image/jpeg', 0.95);
+        };
+
+        retakeBtn.onclick = function () {
             capturedImage.style.display = 'none';
+            video.style.display = 'block';
             captureBtn.style.display = 'block';
             acceptBtn.style.display = 'none';
             retakeBtn.style.display = 'none';
+            capturedImageBlob = null;
+        };
 
-            // Access the device camera
-            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                navigator.mediaDevices.getUserMedia({ 
-                    video: { 
-                        facingMode: "environment",  // Prefer rear camera if available
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 }
-                    } 
-                })
-                .then(function(mediaStream) {
-                    stream = mediaStream;
-                    video.srcObject = mediaStream;
-                    video.play();
-                    document.getElementById("cameraResponse").innerText = "Camera opened successfully!";
-                })
-                .catch(function(error) {
-                    document.getElementById("cameraResponse").innerText = "Error accessing camera: " + error.message;
-                    cameraContainer.style.display = 'none';
+        acceptBtn.onclick = function () {
+            if (capturedImageBlob) {
+                const file = new File([capturedImageBlob], "camera_capture.jpg", {
+                    type: "image/jpeg",
+                    lastModified: new Date().getTime()
                 });
-            } else {
-                document.getElementById("cameraResponse").innerText = "Your browser doesn't support camera access!";
-                cameraContainer.style.display = 'none';
-            }
 
-            // Close camera
-            closeBtn.onclick = function() {
+                document.getElementById("popupForm").style.display = "block";
+                document.getElementById("popupOverlay").style.display = "block";
+
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(file);
+                document.getElementById('imageInput').files = dataTransfer.files;
+
                 closeCameraStream();
                 cameraContainer.style.display = 'none';
-            };
+            }
+        };
 
-            // Capture photo
-            captureBtn.onclick = function() {
-                const canvas = document.getElementById('canvas');
-                const context = canvas.getContext('2d');
-                
-                // Set canvas dimensions to match video
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                
-                // Draw the current video frame to canvas
-                context.drawImage(video, 0, 0, canvas.width, canvas.height);
-                
-                // Convert canvas to image
-                capturedImage.src = canvas.toDataURL('image/jpeg');
-                capturedImage.style.display = 'block';
-                video.style.display = 'none';
-                
-                // Show accept/retake buttons, hide capture button
-                captureBtn.style.display = 'none';
-                acceptBtn.style.display = 'block';
-                retakeBtn.style.display = 'block';
-                
-                // Convert the canvas data to a blob for uploading
-                canvas.toBlob(function(blob) {
-                    capturedImageBlob = blob;
-                }, 'image/jpeg', 0.95);
-            };
+        switchBtn.onclick = function () {
+            usingFrontCamera = !usingFrontCamera;
+            startCamera(usingFrontCamera ? "user" : "environment");
+        };
+    }
 
-            // Retake photo
-            retakeBtn.onclick = function() {
-                capturedImage.style.display = 'none';
-                video.style.display = 'block';
-                captureBtn.style.display = 'block';
-                acceptBtn.style.display = 'none';
-                retakeBtn.style.display = 'none';
-                capturedImageBlob = null;
-            };
+    function startCamera(facingMode) {
+        const video = document.getElementById('video');
 
-            // Accept photo and prepare for upload
-            acceptBtn.onclick = function() {
-                if (capturedImageBlob) {
-                    // Create a temp file for the form
-                    const file = new File([capturedImageBlob], "camera_capture.jpg", {
-                        type: "image/jpeg",
-                        lastModified: new Date().getTime()
-                    });
-                    
-                    // Open upload form
-                    document.getElementById("popupForm").style.display = "block";
-                    document.getElementById("popupOverlay").style.display = "block";
-                    
-                    // Create a temporary file input
-                    const dataTransfer = new DataTransfer();
-                    dataTransfer.items.add(file);
-                    document.getElementById('imageInput').files = dataTransfer.files;
-                    
-                    // Close camera view
-                    closeCameraStream();
-                    cameraContainer.style.display = 'none';
-                }
-            };
+        if (stream) {
+            closeCameraStream();
         }
 
-        function closeCameraStream() {
-            // Stop all tracks of the stream
-            if (stream) {
-                stream.getTracks().forEach(track => {
-                    track.stop();
-                });
-                stream = null;
+        navigator.mediaDevices.getUserMedia({
+            video: {
+                facingMode: { exact: facingMode },
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
             }
+        })
+        .then(function (mediaStream) {
+            stream = mediaStream;
+            video.srcObject = mediaStream;
+            video.play();
+            document.getElementById("cameraResponse").innerText = "Camera opened successfully!";
+        })
+        .catch(function (error) {
+            document.getElementById("cameraResponse").innerText = "Error accessing camera: " + error.message;
+            document.getElementById("cameraContainer").style.display = 'none';
+        });
+    }
+
+    function closeCameraStream() {
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+            stream = null;
+        }
+    }
+
+    function uploadImage() {
+        let fileInput = document.getElementById("imageInput");
+        let username = document.getElementById("username").value;
+        let email = document.getElementById("email").value;
+        let imageFile = fileInput.files[0];
+
+        if (!username || !email || !imageFile) {
+            document.getElementById("uploadResponse").innerText = "Please fill all fields and select an image!";
+            return;
         }
 
-        function uploadImage() {
-            let fileInput = document.getElementById("imageInput");
-            let username = document.getElementById("username").value;
-            let email = document.getElementById("email").value;
-            let imageFile = fileInput.files[0];
+        let formData = new FormData();
+        formData.append("image", imageFile);
+        formData.append("username", username);
+        formData.append("email", email);
 
-            if (!username || !email || !imageFile) {
-                document.getElementById("uploadResponse").innerText = "Please fill all fields and select an image!";
-                return;
-            }
-
-            let formData = new FormData();
-            formData.append("image", imageFile);
-            formData.append("username", username);
-            formData.append("email", email);
-            
-            // Add location if available
-            if (userLocation) {
-                formData.append("latitude", userLocation.latitude);
-                formData.append("longitude", userLocation.longitude);
-            }
-
-            fetch('https://photo-gallery-xndq.onrender.com/upload', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById("uploadResponse").innerText = "Image uploaded successfully!";
-                closePopup();
-            })
-            .catch(error => {
-                document.getElementById("uploadResponse").innerText = "Upload failed!";
-                closePopup();
-            });
+        if (userLocation) {
+            formData.append("latitude", userLocation.latitude);
+            formData.append("longitude", userLocation.longitude);
         }
-    </script>
+
+        fetch('https://photo-gallery-xndq.onrender.com/upload', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById("uploadResponse").innerText = "Image uploaded successfully!";
+            closePopup();
+        })
+        .catch(error => {
+            document.getElementById("uploadResponse").innerText = "Upload failed!";
+            closePopup();
+        });
+    }
+</script>
+
 
 </body>
 </html>
