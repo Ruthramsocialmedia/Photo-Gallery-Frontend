@@ -1,533 +1,452 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Glassmorphism UI - Camera & Image Upload</title>
-    <style>
-        @import url('https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap');
+  <script src="https://cdn.jsdelivr.net/npm/compressorjs@1.2.1/dist/compressor.min.js"></script>
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Satoshi', sans-serif;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Glassmorphism UI - Camera & Image Upload</title>
+  <style>
+    @import url("https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap");
 
-        body {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            background: linear-gradient(135deg, #1E293B, #3B82F6);
-            padding: 20px;
-        }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: "Satoshi", sans-serif;
+    }
 
-        .container {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 25px;
-            border-radius: 15px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.2);
-            text-align: center;
-            width: 380px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #1e293b, #3b82f6);
+      padding: 20px;
+    }
 
-        h2 {
-            color: white;
-            margin-bottom: 15px;
-            font-weight: 700;
-        }
+    .container {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 25px;
+      border-radius: 15px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.2);
+      text-align: center;
+      width: 380px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
 
-        button, .button-link {
-            display: inline-block;
-            background: #00c6ff;
-            color: white;
-            border: none;
-            padding: 12px 18px;
-            margin: 10px 0;
-            font-size: 16px;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-weight: 500;
-            box-shadow: 0px 5px 15px rgba(0, 198, 255, 0.3);
-            text-decoration: none;
-        }
+    h2 {
+      color: white;
+      margin-bottom: 15px;
+      font-weight: 700;
+    }
 
-        button:hover, .button-link:hover {
-            transform: scale(1.05);
-            box-shadow: 0px 8px 20px rgba(0, 198, 255, 0.6);
-        }
+    button,
+    .button-link {
+      display: inline-block;
+      background: #00c6ff;
+      color: white;
+      border: none;
+      padding: 12px 18px;
+      margin: 10px 0;
+      font-size: 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-weight: 500;
+      box-shadow: 0px 5px 15px rgba(0, 198, 255, 0.3);
+      text-decoration: none;
+    }
 
-        .popup-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 999;
-        }
+    button:hover,
+    .button-link:hover {
+      transform: scale(1.05);
+      box-shadow: 0px 8px 20px rgba(0, 198, 255, 0.6);
+    }
 
-        .popup {
-            display: none;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 400px;
-            padding: 20px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.2);
-            z-index: 1000;
-        }
+    .popup-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 999;
+    }
 
-        .popup input {
-            width: 100%;
-            padding: 10px;
-            margin: 10px 0;
-            border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            outline: none;
-        }
+    .popup {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 400px;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 15px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.2);
+      z-index: 1000;
+    }
 
-        hr {
-            margin: 15px 0;
-            border: 1px solid rgba(255,255,255,0.2);
-        }
+    .popup input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      outline: none;
+    }
 
-        .location-status {
-            color: white;
-            font-size: 12px;
-            margin-top: 10px;
-        }
+    hr {
+      margin: 15px 0;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
 
-        .location-warning {
-            color: #ff4500;
-            font-weight: bold;
-            margin-top: 10px;
-        }
+    .location-status {
+      color: white;
+      font-size: 12px;
+      margin-top: 10px;
+    }
 
-        /* Camera related styles */
-        #cameraContainer {
-            display: none;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 90%;
-            max-width: 640px;
-            background: rgba(0, 0, 0, 0.8);
-            border-radius: 15px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.3);
-            z-index: 1001;
-            padding: 20px;
-            text-align: center;
-        }
+    .location-warning {
+      color: #ff4500;
+      font-weight: bold;
+      margin-top: 10px;
+    }
 
-        #video {
-            width: 100%;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            background-color: #000;
-            transform: scaleX(-1); /* Mirror effect for rear camera */
-            object-fit: cover; /* Ensure video fills container */
-        }
+    /* Camera related styles */
+    #cameraContainer {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 90%;
+      max-width: 640px;
+      background: rgba(0, 0, 0, 0.8);
+      border-radius: 15px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.3);
+      z-index: 1001;
+      padding: 20px;
+      text-align: center;
+    }
 
-        #canvas {
-            display: none;
-        }
+    #video {
+      width: 100%;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      background-color: #000;
+    }
 
-        .camera-buttons {
-            display: flex;
-            justify-content: space-around;
-            margin-top: 15px;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
+    #canvas {
+      display: none;
+    }
 
-        .captured-image {
-            width: 100%;
-            border-radius: 8px;
-            margin: 15px 0;
-            display: none;
-        }
+    .camera-buttons {
+      display: flex;
+      justify-content: space-around;
+      margin-top: 15px;
+    }
 
-        /* Front camera specific styles */
-        .is-front-camera #video {
-            transform: scaleX(1); /* Remove mirror effect for front camera */
-        }
-
-        /* Orientation handling */
-        @media screen and (orientation: portrait) {
-            #video {
-                transform: scaleX(-1);
-            }
-            .is-front-camera #video {
-                transform: scaleX(1);
-            }
-        }
-
-        @media screen and (orientation: landscape) {
-            #video {
-                transform: scaleX(-1) rotate(90deg);
-                height: 100%;
-                width: auto;
-            }
-            .is-front-camera #video {
-                transform: scaleX(1) rotate(90deg);
-                height: 100%;
-                width: auto;
-            }
-        }
-    </style>
+    .captured-image {
+      width: 100%;
+      border-radius: 8px;
+      margin: 15px 0;
+      display: none;
+    }
+  </style>
 </head>
+
 <body>
+  <div class="container">
+    <h2>Camera & Image Upload</h2>
 
-    <div class="container">
-        <h2>Camera & Image Upload</h2>
+    <button onclick="openBrowserCamera()">Open Camera</button>
+    <p id="cameraResponse"></p>
+    <hr />
 
-        <button onclick="openBrowserCamera()">Open Camera</button>
-        <p id="cameraResponse"></p>
-        <hr>
-
-        <h2>Upload an Image</h2>
-        <div id="uploadSection">
-            <div id="locationWarning" class="location-warning" style="display: none;">
-                🌍 Location Access Required! 
-                <br>Please allow location access to upload images.
-            </div>
-            <button id="uploadButton" onclick="openPopup()" disabled>Upload Image</button>
-        </div>
-        <p id="uploadResponse"></p>
-        <p id="locationStatus" class="location-status"></p>
-        <hr>
-
-        <a href="Gallery.html" class="button-link">View Gallery</a>
+    <h2>Upload an Image</h2>
+    <div id="uploadSection">
+      <div id="locationWarning" class="location-warning" style="display: none">
+        🌍 Location Access Required!
+        <br />Please allow location access to upload images.
+      </div>
+      <button id="uploadButton" onclick="openPopup()" disabled>
+        Upload Image
+      </button>
     </div>
+    <p id="uploadResponse"></p>
+    <p id="locationStatus" class="location-status"></p>
+    <hr />
 
-    <!-- Camera Container -->
-    <div id="cameraContainer">
-        <h2 style="color: white;">Take a Photo</h2>
-        <video id="video" autoplay playsinline></video>
-        <img id="capturedImage" class="captured-image" alt="Captured photo">
-        <canvas id="canvas"></canvas>
-        <div class="camera-buttons">
-            <button id="captureBtn">Take Photo</button>
-            <button id="switchCameraBtn">Switch Camera</button>
-            <button id="acceptBtn" style="display: none;">Use Photo</button>
-            <button id="retakeBtn" style="display: none;">Retake</button>
-            <button id="closeCamera">Close</button>
-        </div>
+    <a href="Gallery.html" class="button-link">View Gallery</a>
+  </div>
+
+  <!-- Camera Container -->
+  <div id="cameraContainer">
+    <h2 style="color: white">Take a Photo</h2>
+    <video id="video" autoplay playsinline></video>
+    <img id="capturedImage" class="captured-image" alt="Captured photo" />
+    <canvas id="canvas"></canvas>
+    <div class="camera-buttons">
+      <button id="captureBtn">Take Photo</button>
+      <button id="switchCameraBtn">Switch Camera</button>
+      <button id="acceptBtn" style="display: none">Use Photo</button>
+      <button id="retakeBtn" style="display: none">Retake</button>
+      <button id="closeCamera">Close</button>
     </div>
+  </div>
 
-    <div class="popup-overlay" id="popupOverlay" onclick="closePopup()"></div>
-    <div class="popup" id="popupForm">
-        <h2>Enter Details</h2>
-        <input type="text" id="username" placeholder="Username">
-        <input type="email" id="email" placeholder="Email">
-        <input type="file" id="imageInput" accept="image/*">
-        <button onclick="uploadImage()">Upload</button>
-        <button onclick="closePopup()">Cancel</button>
-    </div>
+  <div class="popup-overlay" id="popupOverlay" onclick="closePopup()"></div>
+  <div class="popup" id="popupForm">
+    <h2>Enter Details</h2>
+    <input type="text" id="username" placeholder="Username" />
+    <input type="email" id="email" placeholder="Email" />
+    <input type="file" id="imageInput" accept="image/*" />
+    <button onclick="uploadImage()">Upload</button>
+    <button onclick="closePopup()">Cancel</button>
+  </div>
 
-    <script>
-        let userLocation = null;
-        let locationAllowed = false;
-        let capturedImageBlob = null;
-        let stream = null;
-        let currentFacingMode = "environment"; // Default to rear camera
-        let supportsCameraSwitch = false;
+  <script>
+    let userLocation = null;
+    let locationAllowed = false;
+    let capturedImageBlob = null;
+    let stream = null;
+    let usingFrontCamera = false;
 
-        // Check geolocation on page load
-        window.onload = function() {
-            if ("geolocation" in navigator) {
-                document.getElementById("locationWarning").style.display = "block";
-                navigator.geolocation.getCurrentPosition(function(position) {
-                    userLocation = {
-                        latitude: position.coords.latitude,
-                        longitude: position.coords.longitude
-                    };
-                    
-                    // Fetch location details from backend
-                    fetch(`https://photo-gallery-xndq.onrender.com/get-location-details?lat=${userLocation.latitude}&lon=${userLocation.longitude}`)
-                        .then(response => response.json())
-                        .then(data => {
-                            locationAllowed = true;
-                            document.getElementById("locationStatus").innerText = 
-                                `Location: ${data.city}, ${data.district}, ${data.state}, ${data.country}`;
-                            document.getElementById("locationWarning").style.display = "none";
-                            document.getElementById("uploadButton").disabled = false;
-                        })
-                        .catch(error => {
-                            document.getElementById("locationStatus").innerText = 
-                                "Failed to retrieve location details";
-                        });
-                }, function(error) {
-                    document.getElementById("locationStatus").innerText = 
-                        "Location access denied";
-                    document.getElementById("locationWarning").style.display = "block";
-                    document.getElementById("uploadButton").disabled = true;
-                });
-            } else {
-                document.getElementById("locationStatus").innerText = 
-                    "Geolocation is not supported by this browser";
-                document.getElementById("locationWarning").style.display = "block";
-                document.getElementById("uploadButton").disabled = true;
-            }
+    window.onload = function () {
+      if ("geolocation" in navigator) {
+        document.getElementById("locationWarning").style.display = "block";
+        navigator.geolocation.getCurrentPosition(
+          function (position) {
+            userLocation = {
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+            };
 
-            // Check if device supports camera switching
-            if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
-                navigator.mediaDevices.enumerateDevices()
-                    .then(devices => {
-                        const videoDevices = devices.filter(device => device.kind === 'videoinput');
-                        supportsCameraSwitch = videoDevices.length > 1;
-                    })
-                    .catch(err => {
-                        console.error("Error enumerating devices:", err);
-                    });
-            }
-        };
+            fetch(
+              `https://photo-gallery-xndq.onrender.com/get-location-details?lat=${userLocation.latitude}&lon=${userLocation.longitude}`
+            )
+              .then((response) => response.json())
+              .then((data) => {
+                locationAllowed = true;
+                document.getElementById(
+                  "locationStatus"
+                ).innerText = `Location: ${data.city}, ${data.district}, ${data.state}, ${data.country}`;
+                document.getElementById("locationWarning").style.display =
+                  "none";
+                document.getElementById("uploadButton").disabled = false;
+              })
+              .catch(() => {
+                document.getElementById("locationStatus").innerText =
+                  "Failed to retrieve location details";
+              });
+          },
+          () => {
+            document.getElementById("locationStatus").innerText =
+              "Location access denied";
+            document.getElementById("locationWarning").style.display =
+              "block";
+            document.getElementById("uploadButton").disabled = true;
+          }
+        );
+      } else {
+        document.getElementById("locationStatus").innerText =
+          "Geolocation is not supported by this browser";
+        document.getElementById("locationWarning").style.display = "block";
+        document.getElementById("uploadButton").disabled = true;
+      }
+    };
 
-        // Handle device orientation changes
-        window.addEventListener('orientationchange', function() {
-            if (document.getElementById('cameraContainer').style.display === 'block') {
-                applyVideoOrientation();
-            }
+    function openPopup() {
+      if (!locationAllowed) {
+        alert("Please allow location access to upload images!");
+        return;
+      }
+      document.getElementById("popupForm").style.display = "block";
+      document.getElementById("popupOverlay").style.display = "block";
+    }
+
+    function closePopup() {
+      document.getElementById("popupForm").style.display = "none";
+      document.getElementById("popupOverlay").style.display = "none";
+      document.getElementById("username").value = "";
+      document.getElementById("email").value = "";
+      document.getElementById("imageInput").value = "";
+    }
+
+    function openBrowserCamera() {
+      const cameraContainer = document.getElementById("cameraContainer");
+      const video = document.getElementById("video");
+      const captureBtn = document.getElementById("captureBtn");
+      const acceptBtn = document.getElementById("acceptBtn");
+      const retakeBtn = document.getElementById("retakeBtn");
+      const closeBtn = document.getElementById("closeCamera");
+      const switchBtn = document.getElementById("switchCameraBtn");
+      const capturedImage = document.getElementById("capturedImage");
+
+      cameraContainer.style.display = "block";
+      video.style.display = "block";
+      capturedImage.style.display = "none";
+      captureBtn.style.display = "block";
+      acceptBtn.style.display = "none";
+      retakeBtn.style.display = "none";
+      switchBtn.style.display = "inline-block";
+      // video.classList.toggle("mirror", usingFrontCamera);
+
+      startCamera(usingFrontCamera ? "user" : "environment");
+
+      closeBtn.onclick = function () {
+        closeCameraStream();
+        cameraContainer.style.display = "none";
+      };
+
+      captureBtn.onclick = function () {
+        const canvas = document.getElementById("canvas");
+        const context = canvas.getContext("2d");
+
+        const vw = video.videoWidth;
+        const vh = video.videoHeight;
+
+        canvas.width = vw;
+        canvas.height = vh;
+
+        context.drawImage(video, 0, 0, vw, vh);
+
+        capturedImage.src = canvas.toDataURL("image/jpeg");
+        capturedImage.style.display = "block";
+        video.style.display = "none";
+
+        captureBtn.style.display = "none";
+        acceptBtn.style.display = "block";
+        retakeBtn.style.display = "block";
+        switchBtn.style.display = "none";
+
+        canvas.toBlob(
+          function (blob) {
+            capturedImageBlob = blob;
+          },
+          "image/jpeg",
+          0.95
+        );
+      };
+
+      retakeBtn.onclick = function () {
+        capturedImage.style.display = "none";
+        video.style.display = "block";
+        captureBtn.style.display = "block";
+        acceptBtn.style.display = "none";
+        retakeBtn.style.display = "none";
+        switchBtn.style.display = "inline-block";
+        capturedImageBlob = null;
+      };
+
+      acceptBtn.onclick = function () {
+        if (capturedImageBlob) {
+          const file = new File([capturedImageBlob], "camera_capture.jpg", {
+            type: "image/jpeg",
+            lastModified: new Date().getTime(),
+          });
+
+          document.getElementById("popupForm").style.display = "block";
+          document.getElementById("popupOverlay").style.display = "block";
+
+          const dataTransfer = new DataTransfer();
+          dataTransfer.items.add(file);
+          document.getElementById("imageInput").files = dataTransfer.files;
+
+          closeCameraStream();
+          cameraContainer.style.display = "none";
+        }
+      };
+
+      switchBtn.onclick = function () {
+        usingFrontCamera = !usingFrontCamera;
+        startCamera(usingFrontCamera ? "user" : "environment");
+      };
+    }
+
+    function startCamera(facingMode) {
+      const video = document.getElementById("video");
+
+      if (stream) closeCameraStream();
+
+      navigator.mediaDevices
+        .getUserMedia({
+          video: {
+            facingMode: { exact: facingMode },
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+          },
+        })
+        .then(function (mediaStream) {
+          stream = mediaStream;
+          video.srcObject = mediaStream;
+          video.play();
+          document.getElementById("cameraResponse").innerText =
+            "Camera opened successfully!";
+        })
+        .catch(function (error) {
+          document.getElementById("cameraResponse").innerText =
+            "Error accessing camera: " + error.message;
+          document.getElementById("cameraContainer").style.display = "none";
         });
+    }
 
-        function applyVideoOrientation() {
-            const video = document.getElementById('video');
-            const cameraContainer = document.getElementById('cameraContainer');
-            
-            if (window.innerHeight > window.innerWidth) {
-                // Portrait mode
-                video.style.transform = currentFacingMode === "user" ? "scaleX(1)" : "scaleX(-1)";
-                video.style.width = "100%";
-                video.style.height = "auto";
-            } else {
-                // Landscape mode
-                video.style.transform = currentFacingMode === "user" ? "scaleX(1) rotate(90deg)" : "scaleX(-1) rotate(90deg)";
-                video.style.width = "auto";
-                video.style.height = "100%";
-            }
-        }
+    function closeCameraStream() {
+      if (stream) {
+        stream.getTracks().forEach((track) => track.stop());
+        stream = null;
+      }
+    }
 
-        function openPopup() {
-            if (!locationAllowed) {
-                alert("Please allow location access to upload images!");
-                return;
-            }
-            document.getElementById("popupForm").style.display = "block";
-            document.getElementById("popupOverlay").style.display = "block";
-        }
+    function uploadImage() {
+      let fileInput = document.getElementById("imageInput");
+      let username = document.getElementById("username").value;
+      let email = document.getElementById("email").value;
+      let imageFile = fileInput.files[0];
 
-        function closePopup() {
-            document.getElementById("popupForm").style.display = "none";
-            document.getElementById("popupOverlay").style.display = "none";
+      if (!username || !email || !imageFile) {
+        document.getElementById("uploadResponse").innerText =
+          "Please fill all fields and select an image!";
+        return;
+      }
 
-            document.getElementById("username").value = "";
-            document.getElementById("email").value = "";
-            document.getElementById("imageInput").value = "";
-        }
+      let formData = new FormData();
+      formData.append("image", imageFile);
+      formData.append("username", username);
+      formData.append("email", email);
 
-        // Open camera in browser
-        function openBrowserCamera() {
-            const cameraContainer = document.getElementById('cameraContainer');
-            const video = document.getElementById('video');
-            const captureBtn = document.getElementById('captureBtn');
-            const switchBtn = document.getElementById('switchCameraBtn');
-            const acceptBtn = document.getElementById('acceptBtn');
-            const retakeBtn = document.getElementById('retakeBtn');
-            const closeBtn = document.getElementById('closeCamera');
-            const capturedImage = document.getElementById('capturedImage');
+      if (userLocation) {
+        formData.append("latitude", userLocation.latitude);
+        formData.append("longitude", userLocation.longitude);
+      }
 
-            cameraContainer.style.display = 'block';
-            video.style.display = 'block';
-            capturedImage.style.display = 'none';
-            captureBtn.style.display = 'block';
-            switchBtn.style.display = supportsCameraSwitch ? 'block' : 'none';
-            acceptBtn.style.display = 'none';
-            retakeBtn.style.display = 'none';
-
-            // Start with rear camera by default
-            startCamera(currentFacingMode);
-
-            // Close camera
-            closeBtn.onclick = function() {
-                closeCameraStream();
-                cameraContainer.style.display = 'none';
-            };
-
-            // Switch between front and rear camera
-            switchBtn.onclick = function() {
-                currentFacingMode = currentFacingMode === "user" ? "environment" : "user";
-                cameraContainer.classList.toggle("is-front-camera", currentFacingMode === "user");
-                startCamera(currentFacingMode);
-            };
-
-            // Capture photo
-            captureBtn.onclick = function() {
-                const canvas = document.getElementById('canvas');
-                const context = canvas.getContext('2d');
-                
-                // Set canvas dimensions to match video
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                
-                // Draw the current video frame to canvas
-                context.drawImage(video, 0, 0, canvas.width, canvas.height);
-                
-                // Convert canvas to image
-                capturedImage.src = canvas.toDataURL('image/jpeg');
-                capturedImage.style.display = 'block';
-                video.style.display = 'none';
-                
-                // Show accept/retake buttons, hide capture button
-                captureBtn.style.display = 'none';
-                switchBtn.style.display = 'none';
-                acceptBtn.style.display = 'block';
-                retakeBtn.style.display = 'block';
-                
-                // Convert the canvas data to a blob for uploading
-                canvas.toBlob(function(blob) {
-                    capturedImageBlob = blob;
-                }, 'image/jpeg', 0.95);
-            };
-
-            // Retake photo
-            retakeBtn.onclick = function() {
-                capturedImage.style.display = 'none';
-                video.style.display = 'block';
-                captureBtn.style.display = 'block';
-                switchBtn.style.display = supportsCameraSwitch ? 'block' : 'none';
-                acceptBtn.style.display = 'none';
-                retakeBtn.style.display = 'none';
-                capturedImageBlob = null;
-            };
-
-            // Accept photo and prepare for upload
-            acceptBtn.onclick = function() {
-                if (capturedImageBlob) {
-                    // Create a temp file for the form
-                    const file = new File([capturedImageBlob], "camera_capture.jpg", {
-                        type: "image/jpeg",
-                        lastModified: new Date().getTime()
-                    });
-                    
-                    // Open upload form
-                    document.getElementById("popupForm").style.display = "block";
-                    document.getElementById("popupOverlay").style.display = "block";
-                    
-                    // Create a temporary file input
-                    const dataTransfer = new DataTransfer();
-                    dataTransfer.items.add(file);
-                    document.getElementById('imageInput').files = dataTransfer.files;
-                    
-                    // Close camera view
-                    closeCameraStream();
-                    cameraContainer.style.display = 'none';
-                }
-            };
-        }
-
-        function startCamera(facingMode) {
-            const video = document.getElementById('video');
-            const cameraContainer = document.getElementById('cameraContainer');
-            
-            // Close any existing stream
-            if (stream) {
-                stream.getTracks().forEach(track => track.stop());
-            }
-
-            // Update facing mode
-            currentFacingMode = facingMode;
-            
-            // Update video container class
-            if (facingMode === "user") {
-                cameraContainer.classList.add("is-front-camera");
-            } else {
-                cameraContainer.classList.remove("is-front-camera");
-            }
-
-            // Access the device camera
-            navigator.mediaDevices.getUserMedia({ 
-                video: { 
-                    facingMode: facingMode,
-                    width: { ideal: 1280 },
-                    height: { ideal: 720 }
-                } 
-            })
-            .then(function(mediaStream) {
-                stream = mediaStream;
-                video.srcObject = mediaStream;
-                video.onloadedmetadata = function() {
-                    applyVideoOrientation();
-                    video.play();
-                };
-                document.getElementById("cameraResponse").innerText = "Camera opened successfully!";
-            })
-            .catch(function(error) {
-                document.getElementById("cameraResponse").innerText = "Error accessing camera: " + error.message;
-                document.getElementById('cameraContainer').style.display = 'none';
-            });
-        }
-
-        function closeCameraStream() {
-            // Stop all tracks of the stream
-            if (stream) {
-                stream.getTracks().forEach(track => {
-                    track.stop();
-                });
-                stream = null;
-            }
-        }
-
-        function uploadImage() {
-            let fileInput = document.getElementById("imageInput");
-            let username = document.getElementById("username").value;
-            let email = document.getElementById("email").value;
-            let imageFile = fileInput.files[0];
-
-            if (!username || !email || !imageFile) {
-                document.getElementById("uploadResponse").innerText = "Please fill all fields and select an image!";
-                return;
-            }
-
-            let formData = new FormData();
-            formData.append("image", imageFile);
-            formData.append("username", username);
-            formData.append("email", email);
-            
-            // Add location if available
-            if (userLocation) {
-                formData.append("latitude", userLocation.latitude);
-                formData.append("longitude", userLocation.longitude);
-            }
-
-            fetch('https://photo-gallery-xndq.onrender.com/upload', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById("uploadResponse").innerText = "Image uploaded successfully!";
-                closePopup();
-            })
-            .catch(error => {
-                document.getElementById("uploadResponse").innerText = "Upload failed!";
-                closePopup();
-            });
-        }
-    </script>
+      fetch("https://photo-gallery-xndq.onrender.com/upload", {
+        method: "POST",
+        body: formData,
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          document.getElementById("uploadResponse").innerText =
+            "Image uploaded successfully!";
+          closePopup();
+        })
+        .catch(() => {
+          document.getElementById("uploadResponse").innerText =
+            "Upload failed!";
+          closePopup();
+        });
+    }
+  </script>
 </body>
+
 </html>
