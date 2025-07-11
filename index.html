@@ -307,33 +307,29 @@
           closeCameraStream();
           cameraContainer.style.display = "none";
         };
-
         captureBtn.onclick = function () {
           const canvas = document.getElementById("canvas");
           const context = canvas.getContext("2d");
 
-          let orientation =
-            (screen.orientation || {}).angle || window.orientation || 0;
-          let rotate90 = Math.abs(orientation) === 90;
+          const isFront = usingFrontCamera; // Track whether we're using front cam
+          const videoWidth = video.videoWidth;
+          const videoHeight = video.videoHeight;
 
-          if (rotate90) {
-            canvas.width = video.videoHeight;
-            canvas.height = video.videoWidth;
+          // Default canvas size based on video
+          canvas.width = videoWidth;
+          canvas.height = videoHeight;
+
+          // Clear previous frame
+          context.clearRect(0, 0, canvas.width, canvas.height);
+
+          // Apply mirror flip for front camera
+          if (isFront) {
             context.save();
-            context.translate(canvas.width / 2, canvas.height / 2);
-            context.rotate(((orientation === 90 ? -1 : 1) * Math.PI) / 2);
-            context.drawImage(
-              video,
-              -video.videoWidth / 2,
-              -video.videoHeight / 2,
-              video.videoWidth,
-              video.videoHeight
-            );
+            context.scale(-1, 1); // Mirror horizontally
+            context.drawImage(video, -videoWidth, 0, videoWidth, videoHeight);
             context.restore();
           } else {
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            context.drawImage(video, 0, 0, videoWidth, videoHeight);
           }
 
           capturedImage.src = canvas.toDataURL("image/jpeg");
