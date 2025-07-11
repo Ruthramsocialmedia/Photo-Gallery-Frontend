@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
+    <script src="https://cdn.jsdelivr.net/npm/compressorjs@1.2.1/dist/compressor.min.js"></script>
+
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Glassmorphism UI - Camera & Image Upload</title>
@@ -220,7 +222,7 @@
       let locationAllowed = false;
       let capturedImageBlob = null;
       let stream = null;
-      let usingFrontCamera = false; // NEW: Tracks camera state
+      let usingFrontCamera = false;
 
       window.onload = function () {
         if ("geolocation" in navigator) {
@@ -245,12 +247,12 @@
                     "none";
                   document.getElementById("uploadButton").disabled = false;
                 })
-                .catch((error) => {
+                .catch(() => {
                   document.getElementById("locationStatus").innerText =
                     "Failed to retrieve location details";
                 });
             },
-            function (error) {
+            () => {
               document.getElementById("locationStatus").innerText =
                 "Location access denied";
               document.getElementById("locationWarning").style.display =
@@ -307,25 +309,21 @@
           closeCameraStream();
           cameraContainer.style.display = "none";
         };
+
         captureBtn.onclick = function () {
           const canvas = document.getElementById("canvas");
           const context = canvas.getContext("2d");
 
-          const isFront = usingFrontCamera; // Track whether we're using front cam
           const videoWidth = video.videoWidth;
           const videoHeight = video.videoHeight;
 
-          // Default canvas size based on video
           canvas.width = videoWidth;
           canvas.height = videoHeight;
 
-          // Clear previous frame
-          context.clearRect(0, 0, canvas.width, canvas.height);
-
-          // Apply mirror flip for front camera
-          if (isFront) {
+          // Mirror for front camera
+          if (usingFrontCamera) {
             context.save();
-            context.scale(1, -1); // Mirror horizontally
+            context.scale(-1, 1);
             context.drawImage(video, -videoWidth, 0, videoWidth, videoHeight);
             context.restore();
           } else {
@@ -343,7 +341,18 @@
 
           canvas.toBlob(
             function (blob) {
-              capturedImageBlob = blob;
+              // Auto-fix orientation with Compressor.js
+              new Compressor(blob, {
+                quality: 0.95,
+                convertSize: 5000000,
+                success(result) {
+                  capturedImageBlob = result;
+                },
+                error(err) {
+                  console.error("Compression failed:", err.message);
+                  capturedImageBlob = blob; // fallback
+                },
+              });
             },
             "image/jpeg",
             0.95
@@ -356,7 +365,7 @@
           captureBtn.style.display = "block";
           acceptBtn.style.display = "none";
           retakeBtn.style.display = "none";
-          switchBtn.style.display = "inline-block"; // 👈 Shows the switch camera button
+          switchBtn.style.display = "inline-block";
           capturedImageBlob = null;
         };
 
@@ -388,9 +397,7 @@
       function startCamera(facingMode) {
         const video = document.getElementById("video");
 
-        if (stream) {
-          closeCameraStream();
-        }
+        if (stream) closeCameraStream();
 
         navigator.mediaDevices
           .getUserMedia({
@@ -453,7 +460,7 @@
               "Image uploaded successfully!";
             closePopup();
           })
-          .catch((error) => {
+          .catch(() => {
             document.getElementById("uploadResponse").innerText =
               "Upload failed!";
             closePopup();
