@@ -139,6 +139,8 @@
             border-radius: 8px;
             margin-bottom: 15px;
             background-color: #000;
+            transform: scaleX(-1); /* Mirror effect for rear camera */
+            object-fit: cover; /* Ensure video fills container */
         }
 
         #canvas {
@@ -149,6 +151,8 @@
             display: flex;
             justify-content: space-around;
             margin-top: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
         }
 
         .captured-image {
@@ -156,6 +160,34 @@
             border-radius: 8px;
             margin: 15px 0;
             display: none;
+        }
+
+        /* Front camera specific styles */
+        .is-front-camera #video {
+            transform: scaleX(1); /* Remove mirror effect for front camera */
+        }
+
+        /* Orientation handling */
+        @media screen and (orientation: portrait) {
+            #video {
+                transform: scaleX(-1);
+            }
+            .is-front-camera #video {
+                transform: scaleX(1);
+            }
+        }
+
+        @media screen and (orientation: landscape) {
+            #video {
+                transform: scaleX(-1) rotate(90deg);
+                height: 100%;
+                width: auto;
+            }
+            .is-front-camera #video {
+                transform: scaleX(1) rotate(90deg);
+                height: 100%;
+                width: auto;
+            }
         }
     </style>
 </head>
@@ -191,6 +223,7 @@
         <canvas id="canvas"></canvas>
         <div class="camera-buttons">
             <button id="captureBtn">Take Photo</button>
+            <button id="switchCameraBtn">Switch Camera</button>
             <button id="acceptBtn" style="display: none;">Use Photo</button>
             <button id="retakeBtn" style="display: none;">Retake</button>
             <button id="closeCamera">Close</button>
@@ -212,6 +245,8 @@
         let locationAllowed = false;
         let capturedImageBlob = null;
         let stream = null;
+        let currentFacingMode = "environment"; // Default to rear camera
+        let supportsCameraSwitch = false;
 
         // Check geolocation on page load
         window.onload = function() {
@@ -249,7 +284,43 @@
                 document.getElementById("locationWarning").style.display = "block";
                 document.getElementById("uploadButton").disabled = true;
             }
+
+            // Check if device supports camera switching
+            if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+                navigator.mediaDevices.enumerateDevices()
+                    .then(devices => {
+                        const videoDevices = devices.filter(device => device.kind === 'videoinput');
+                        supportsCameraSwitch = videoDevices.length > 1;
+                    })
+                    .catch(err => {
+                        console.error("Error enumerating devices:", err);
+                    });
+            }
         };
+
+        // Handle device orientation changes
+        window.addEventListener('orientationchange', function() {
+            if (document.getElementById('cameraContainer').style.display === 'block') {
+                applyVideoOrientation();
+            }
+        });
+
+        function applyVideoOrientation() {
+            const video = document.getElementById('video');
+            const cameraContainer = document.getElementById('cameraContainer');
+            
+            if (window.innerHeight > window.innerWidth) {
+                // Portrait mode
+                video.style.transform = currentFacingMode === "user" ? "scaleX(1)" : "scaleX(-1)";
+                video.style.width = "100%";
+                video.style.height = "auto";
+            } else {
+                // Landscape mode
+                video.style.transform = currentFacingMode === "user" ? "scaleX(1) rotate(90deg)" : "scaleX(-1) rotate(90deg)";
+                video.style.width = "auto";
+                video.style.height = "100%";
+            }
+        }
 
         function openPopup() {
             if (!locationAllowed) {
@@ -274,6 +345,7 @@
             const cameraContainer = document.getElementById('cameraContainer');
             const video = document.getElementById('video');
             const captureBtn = document.getElementById('captureBtn');
+            const switchBtn = document.getElementById('switchCameraBtn');
             const acceptBtn = document.getElementById('acceptBtn');
             const retakeBtn = document.getElementById('retakeBtn');
             const closeBtn = document.getElementById('closeCamera');
@@ -283,37 +355,24 @@
             video.style.display = 'block';
             capturedImage.style.display = 'none';
             captureBtn.style.display = 'block';
+            switchBtn.style.display = supportsCameraSwitch ? 'block' : 'none';
             acceptBtn.style.display = 'none';
             retakeBtn.style.display = 'none';
 
-            // Access the device camera
-            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                navigator.mediaDevices.getUserMedia({ 
-                    video: { 
-                        facingMode: "environment",  // Prefer rear camera if available
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 }
-                    } 
-                })
-                .then(function(mediaStream) {
-                    stream = mediaStream;
-                    video.srcObject = mediaStream;
-                    video.play();
-                    document.getElementById("cameraResponse").innerText = "Camera opened successfully!";
-                })
-                .catch(function(error) {
-                    document.getElementById("cameraResponse").innerText = "Error accessing camera: " + error.message;
-                    cameraContainer.style.display = 'none';
-                });
-            } else {
-                document.getElementById("cameraResponse").innerText = "Your browser doesn't support camera access!";
-                cameraContainer.style.display = 'none';
-            }
+            // Start with rear camera by default
+            startCamera(currentFacingMode);
 
             // Close camera
             closeBtn.onclick = function() {
                 closeCameraStream();
                 cameraContainer.style.display = 'none';
+            };
+
+            // Switch between front and rear camera
+            switchBtn.onclick = function() {
+                currentFacingMode = currentFacingMode === "user" ? "environment" : "user";
+                cameraContainer.classList.toggle("is-front-camera", currentFacingMode === "user");
+                startCamera(currentFacingMode);
             };
 
             // Capture photo
@@ -335,6 +394,7 @@
                 
                 // Show accept/retake buttons, hide capture button
                 captureBtn.style.display = 'none';
+                switchBtn.style.display = 'none';
                 acceptBtn.style.display = 'block';
                 retakeBtn.style.display = 'block';
                 
@@ -349,6 +409,7 @@
                 capturedImage.style.display = 'none';
                 video.style.display = 'block';
                 captureBtn.style.display = 'block';
+                switchBtn.style.display = supportsCameraSwitch ? 'block' : 'none';
                 acceptBtn.style.display = 'none';
                 retakeBtn.style.display = 'none';
                 capturedImageBlob = null;
@@ -377,6 +438,48 @@
                     cameraContainer.style.display = 'none';
                 }
             };
+        }
+
+        function startCamera(facingMode) {
+            const video = document.getElementById('video');
+            const cameraContainer = document.getElementById('cameraContainer');
+            
+            // Close any existing stream
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+
+            // Update facing mode
+            currentFacingMode = facingMode;
+            
+            // Update video container class
+            if (facingMode === "user") {
+                cameraContainer.classList.add("is-front-camera");
+            } else {
+                cameraContainer.classList.remove("is-front-camera");
+            }
+
+            // Access the device camera
+            navigator.mediaDevices.getUserMedia({ 
+                video: { 
+                    facingMode: facingMode,
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                } 
+            })
+            .then(function(mediaStream) {
+                stream = mediaStream;
+                video.srcObject = mediaStream;
+                video.onloadedmetadata = function() {
+                    applyVideoOrientation();
+                    video.play();
+                };
+                document.getElementById("cameraResponse").innerText = "Camera opened successfully!";
+            })
+            .catch(function(error) {
+                document.getElementById("cameraResponse").innerText = "Error accessing camera: " + error.message;
+                document.getElementById('cameraContainer').style.display = 'none';
+            });
         }
 
         function closeCameraStream() {
@@ -426,6 +529,5 @@
             });
         }
     </script>
-
 </body>
 </html>
