@@ -325,7 +325,7 @@
           // Apply mirror flip for front camera
           if (isFront) {
             context.save();
-            context.scale(-1, 1); // Mirror horizontally
+            context.scale(1, -1); // Mirror horizontally
             context.drawImage(video, -videoWidth, 0, videoWidth, videoHeight);
             context.restore();
           } else {
