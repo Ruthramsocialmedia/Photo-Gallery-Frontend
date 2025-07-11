@@ -224,7 +224,7 @@
                     };
                     
                     // Fetch location details from backend
-                    fetch(`https://photo-gallery-ftvq.onrender.com/get-location-details?lat=${userLocation.latitude}&lon=${userLocation.longitude}`)
+                    fetch(`http://localhost:5000/get-location-details?lat=${userLocation.latitude}&lon=${userLocation.longitude}`)
                         .then(response => response.json())
                         .then(data => {
                             locationAllowed = true;
@@ -411,7 +411,7 @@
                 formData.append("longitude", userLocation.longitude);
             }
 
-            fetch('https://photo-gallery-ftvq.onrender.com/upload', {
+            fetch('http://localhost:5000/upload', {
                 method: 'POST',
                 body: formData
             })
