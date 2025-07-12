@@ -222,7 +222,7 @@
     </div>
 
     <script>
-      let userLocation = null;
+     let userLocation = null;
       let locationAllowed = false;
       let capturedImageBlob = null;
       let stream = null;
@@ -239,14 +239,14 @@
               };
 
               fetch(
-                `https://photo-gallery-xndq.onrender.com/get-location-details?lat=${userLocation.latitude}&lon=${userLocation.longitude}`
+                https://photo-gallery-xndq.onrender.com/get-location-details?lat=${userLocation.latitude}&lon=${userLocation.longitude}
               )
                 .then((response) => response.json())
                 .then((data) => {
                   locationAllowed = true;
                   document.getElementById(
                     "locationStatus"
-                  ).innerText = `Location: ${data.city}, ${data.district}, ${data.state}, ${data.country}`;
+                  ).innerText = Location: ${data.city}, ${data.district}, ${data.state}, ${data.country};
                   document.getElementById("locationWarning").style.display =
                     "none";
                   document.getElementById("uploadButton").disabled = false;
@@ -306,7 +306,6 @@
         acceptBtn.style.display = "none";
         retakeBtn.style.display = "none";
         switchBtn.style.display = "inline-block";
-        video.classList.toggle("mirror", usingFrontCamera);
 
         startCamera(usingFrontCamera ? "user" : "environment");
 
@@ -319,24 +318,15 @@
           const canvas = document.getElementById("canvas");
           const context = canvas.getContext("2d");
 
-          const isFront = usingFrontCamera;
           const vw = video.videoWidth;
           const vh = video.videoHeight;
 
-          // Always treat portrait as default orientation
+          // Set canvas dimensions
           canvas.width = vw;
           canvas.height = vh;
 
-          context.save();
-
-          if (isFront) {
-            // Flip horizontally for front cam
-            context.translate(canvas.width, 0);
-            context.scale(-1, 1);
-          }
-
+          // Draw image without flipping
           context.drawImage(video, 0, 0, vw, vh);
-          context.restore();
 
           capturedImage.src = canvas.toDataURL("image/jpeg");
           capturedImage.style.display = "block";
@@ -347,7 +337,7 @@
           retakeBtn.style.display = "block";
           switchBtn.style.display = "none";
 
-          // Use canvas blob directly (no EXIF needed)
+          // Use canvas blob directly
           canvas.toBlob(
             function (blob) {
               capturedImageBlob = blob;
