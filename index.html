@@ -121,7 +121,7 @@
       }
 
       #video.mirror {
-        transform: scaleX(1);
+        transform: scaleX(-1);
       }
 
       /* Camera related styles */
@@ -222,233 +222,248 @@
     </div>
 
     <script>
-  let userLocation = null;
-  let locationAllowed = false;
-  let capturedImageBlob = null;
-  let stream = null;
-  let usingFrontCamera = false;
+      let userLocation = null;
+      let locationAllowed = false;
+      let capturedImageBlob = null;
+      let stream = null;
+      let usingFrontCamera = false;
 
-  window.onload = function () {
-    if ("geolocation" in navigator) {
-      document.getElementById("locationWarning").style.display = "block";
-      navigator.geolocation.getCurrentPosition(
-        function (position) {
-          userLocation = {
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-          };
+      window.onload = function () {
+        if ("geolocation" in navigator) {
+          document.getElementById("locationWarning").style.display = "block";
+          navigator.geolocation.getCurrentPosition(
+            function (position) {
+              userLocation = {
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+              };
 
-          fetch(
-            `https://photo-gallery-xndq.onrender.com/get-location-details?lat=${userLocation.latitude}&lon=${userLocation.longitude}`
-          )
-            .then((response) => response.json())
-            .then((data) => {
-              locationAllowed = true;
-              document.getElementById(
-                "locationStatus"
-              ).innerText = `Location: ${data.city}, ${data.district}, ${data.state}, ${data.country}`;
-              document.getElementById("locationWarning").style.display = "none";
-              document.getElementById("uploadButton").disabled = false;
-            })
-            .catch(() => {
+              fetch(
+                `https://photo-gallery-xndq.onrender.com/get-location-details?lat=${userLocation.latitude}&lon=${userLocation.longitude}`
+              )
+                .then((response) => response.json())
+                .then((data) => {
+                  locationAllowed = true;
+                  document.getElementById(
+                    "locationStatus"
+                  ).innerText = `Location: ${data.city}, ${data.district}, ${data.state}, ${data.country}`;
+                  document.getElementById("locationWarning").style.display =
+                    "none";
+                  document.getElementById("uploadButton").disabled = false;
+                })
+                .catch(() => {
+                  document.getElementById("locationStatus").innerText =
+                    "Failed to retrieve location details";
+                });
+            },
+            () => {
               document.getElementById("locationStatus").innerText =
-                "Failed to retrieve location details";
-            });
-        },
-        () => {
+                "Location access denied";
+              document.getElementById("locationWarning").style.display =
+                "block";
+              document.getElementById("uploadButton").disabled = true;
+            }
+          );
+        } else {
           document.getElementById("locationStatus").innerText =
-            "Location access denied";
+            "Geolocation is not supported by this browser";
           document.getElementById("locationWarning").style.display = "block";
           document.getElementById("uploadButton").disabled = true;
         }
-      );
-    } else {
-      document.getElementById("locationStatus").innerText =
-        "Geolocation is not supported by this browser";
-      document.getElementById("locationWarning").style.display = "block";
-      document.getElementById("uploadButton").disabled = true;
-    }
-  };
+      };
 
-  function openPopup() {
-    if (!locationAllowed) {
-      alert("Please allow location access to upload images!");
-      return;
-    }
-    document.getElementById("popupForm").style.display = "block";
-    document.getElementById("popupOverlay").style.display = "block";
-  }
-
-  function closePopup() {
-    document.getElementById("popupForm").style.display = "none";
-    document.getElementById("popupOverlay").style.display = "none";
-    document.getElementById("username").value = "";
-    document.getElementById("email").value = "";
-    document.getElementById("imageInput").value = "";
-  }
-
-  function openBrowserCamera() {
-    const cameraContainer = document.getElementById("cameraContainer");
-    const video = document.getElementById("video");
-    const captureBtn = document.getElementById("captureBtn");
-    const acceptBtn = document.getElementById("acceptBtn");
-    const retakeBtn = document.getElementById("retakeBtn");
-    const closeBtn = document.getElementById("closeCamera");
-    const switchBtn = document.getElementById("switchCameraBtn");
-    const capturedImage = document.getElementById("capturedImage");
-
-    cameraContainer.style.display = "block";
-    video.style.display = "block";
-    capturedImage.style.display = "none";
-    captureBtn.style.display = "block";
-    acceptBtn.style.display = "none";
-    retakeBtn.style.display = "none";
-    switchBtn.style.display = "inline-block";
-
-    startCamera(usingFrontCamera ? "user" : "environment");
-
-    closeBtn.onclick = function () {
-      closeCameraStream();
-      cameraContainer.style.display = "none";
-    };
-
-    captureBtn.onclick = function () {
-      const canvas = document.getElementById("canvas");
-      const context = canvas.getContext("2d");
-
-      const vw = video.videoWidth;
-      const vh = video.videoHeight;
-
-      canvas.width = vw;
-      canvas.height = vh;
-
-      context.drawImage(video, 0, 0, vw, vh);
-
-      capturedImage.src = canvas.toDataURL("image/jpeg");
-      capturedImage.style.display = "block";
-      video.style.display = "none";
-
-      captureBtn.style.display = "none";
-      acceptBtn.style.display = "block";
-      retakeBtn.style.display = "block";
-      switchBtn.style.display = "none";
-
-      canvas.toBlob(
-        function (blob) {
-          capturedImageBlob = blob;
-        },
-        "image/jpeg",
-        0.95
-      );
-    };
-
-    retakeBtn.onclick = function () {
-      capturedImage.style.display = "none";
-      video.style.display = "block";
-      captureBtn.style.display = "block";
-      acceptBtn.style.display = "none";
-      retakeBtn.style.display = "none";
-      switchBtn.style.display = "inline-block";
-      capturedImageBlob = null;
-    };
-
-    acceptBtn.onclick = function () {
-      if (capturedImageBlob) {
-        const file = new File([capturedImageBlob], "camera_capture.jpg", {
-          type: "image/jpeg",
-          lastModified: new Date().getTime(),
-        });
-
+      function openPopup() {
+        if (!locationAllowed) {
+          alert("Please allow location access to upload images!");
+          return;
+        }
         document.getElementById("popupForm").style.display = "block";
         document.getElementById("popupOverlay").style.display = "block";
-
-        const dataTransfer = new DataTransfer();
-        dataTransfer.items.add(file);
-        document.getElementById("imageInput").files = dataTransfer.files;
-
-        closeCameraStream();
-        cameraContainer.style.display = "none";
       }
-    };
 
-    switchBtn.onclick = function () {
-      usingFrontCamera = !usingFrontCamera;
-      startCamera(usingFrontCamera ? "user" : "environment");
-    };
-  }
+      function closePopup() {
+        document.getElementById("popupForm").style.display = "none";
+        document.getElementById("popupOverlay").style.display = "none";
+        document.getElementById("username").value = "";
+        document.getElementById("email").value = "";
+        document.getElementById("imageInput").value = "";
+      }
 
-  function startCamera(facingMode) {
-    const video = document.getElementById("video");
+      function openBrowserCamera() {
+        const cameraContainer = document.getElementById("cameraContainer");
+        const video = document.getElementById("video");
+        const captureBtn = document.getElementById("captureBtn");
+        const acceptBtn = document.getElementById("acceptBtn");
+        const retakeBtn = document.getElementById("retakeBtn");
+        const closeBtn = document.getElementById("closeCamera");
+        const switchBtn = document.getElementById("switchCameraBtn");
+        const capturedImage = document.getElementById("capturedImage");
 
-    if (stream) closeCameraStream();
+        cameraContainer.style.display = "block";
+        video.style.display = "block";
+        capturedImage.style.display = "none";
+        captureBtn.style.display = "block";
+        acceptBtn.style.display = "none";
+        retakeBtn.style.display = "none";
+        switchBtn.style.display = "inline-block";
+        video.classList.toggle("mirror", usingFrontCamera);
 
-    navigator.mediaDevices
-      .getUserMedia({
-        video: {
-          facingMode: { exact: facingMode },
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-        },
-        audio: false,
-      })
-      .then(function (mediaStream) {
-        stream = mediaStream;
-        video.srcObject = mediaStream;
-        video.play();
-        document.getElementById("cameraResponse").innerText =
-          "Camera opened successfully!";
-      })
-      .catch(function (error) {
-        document.getElementById("cameraResponse").innerText =
-          "Error accessing camera: " + error.message;
-        document.getElementById("cameraContainer").style.display = "none";
-      });
-  }
+        startCamera(usingFrontCamera ? "user" : "environment");
 
-  function closeCameraStream() {
-    if (stream) {
-      stream.getTracks().forEach((track) => track.stop());
-      stream = null;
-    }
-  }
+        closeBtn.onclick = function () {
+          closeCameraStream();
+          cameraContainer.style.display = "none";
+        };
 
-  function uploadImage() {
-    let fileInput = document.getElementById("imageInput");
-    let username = document.getElementById("username").value;
-    let email = document.getElementById("email").value;
-    let imageFile = fileInput.files[0];
+        captureBtn.onclick = function () {
+          const canvas = document.getElementById("canvas");
+          const context = canvas.getContext("2d");
 
-    if (!username || !email || !imageFile) {
-      document.getElementById("uploadResponse").innerText =
-        "Please fill all fields and select an image!";
-      return;
-    }
+          const isFront = usingFrontCamera;
+          const vw = video.videoWidth;
+          const vh = video.videoHeight;
 
-    let formData = new FormData();
-    formData.append("image", imageFile);
-    formData.append("username", username);
-    formData.append("email", email);
+          // Always treat portrait as default orientation
+          canvas.width = vw;
+          canvas.height = vh;
 
-    if (userLocation) {
-      formData.append("latitude", userLocation.latitude);
-      formData.append("longitude", userLocation.longitude);
-    }
+          context.save();
 
-    fetch("https://photo-gallery-xndq.onrender.com/upload", {
-      method: "POST",
-      body: formData,
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        document.getElementById("uploadResponse").innerText =
-          "Image uploaded successfully!";
-        closePopup();
-      })
-      .catch(() => {
-        document.getElementById("uploadResponse").innerText = "Upload failed!";
-        closePopup();
-      });
-  }
-</script>
+          if (isFront) {
+            // Flip horizontally for front cam
+            context.translate(canvas.width, 0);
+            context.scale(-1, 1);
+          }
+
+          context.drawImage(video, 0, 0, vw, vh);
+          context.restore();
+
+          capturedImage.src = canvas.toDataURL("image/jpeg");
+          capturedImage.style.display = "block";
+          video.style.display = "none";
+
+          captureBtn.style.display = "none";
+          acceptBtn.style.display = "block";
+          retakeBtn.style.display = "block";
+          switchBtn.style.display = "none";
+
+          // Use canvas blob directly (no EXIF needed)
+          canvas.toBlob(
+            function (blob) {
+              capturedImageBlob = blob;
+            },
+            "image/jpeg",
+            0.95
+          );
+        };
+
+        retakeBtn.onclick = function () {
+          capturedImage.style.display = "none";
+          video.style.display = "block";
+          captureBtn.style.display = "block";
+          acceptBtn.style.display = "none";
+          retakeBtn.style.display = "none";
+          switchBtn.style.display = "inline-block";
+          capturedImageBlob = null;
+        };
+
+        acceptBtn.onclick = function () {
+          if (capturedImageBlob) {
+            const file = new File([capturedImageBlob], "camera_capture.jpg", {
+              type: "image/jpeg",
+              lastModified: new Date().getTime(),
+            });
+
+            document.getElementById("popupForm").style.display = "block";
+            document.getElementById("popupOverlay").style.display = "block";
+
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(file);
+            document.getElementById("imageInput").files = dataTransfer.files;
+
+            closeCameraStream();
+            cameraContainer.style.display = "none";
+          }
+        };
+
+        switchBtn.onclick = function () {
+          usingFrontCamera = !usingFrontCamera;
+          startCamera(usingFrontCamera ? "user" : "environment");
+        };
+      }
+
+      function startCamera(facingMode) {
+        const video = document.getElementById("video");
+
+        if (stream) closeCameraStream();
+
+        navigator.mediaDevices
+          .getUserMedia({
+            video: {
+              facingMode: { exact: facingMode },
+              width: { ideal: 1280 },
+              height: { ideal: 720 },
+            },
+          })
+          .then(function (mediaStream) {
+            stream = mediaStream;
+            video.srcObject = mediaStream;
+            video.play();
+            document.getElementById("cameraResponse").innerText =
+              "Camera opened successfully!";
+          })
+          .catch(function (error) {
+            document.getElementById("cameraResponse").innerText =
+              "Error accessing camera: " + error.message;
+            document.getElementById("cameraContainer").style.display = "none";
+          });
+      }
+
+      function closeCameraStream() {
+        if (stream) {
+          stream.getTracks().forEach((track) => track.stop());
+          stream = null;
+        }
+      }
+
+      function uploadImage() {
+        let fileInput = document.getElementById("imageInput");
+        let username = document.getElementById("username").value;
+        let email = document.getElementById("email").value;
+        let imageFile = fileInput.files[0];
+
+        if (!username || !email || !imageFile) {
+          document.getElementById("uploadResponse").innerText =
+            "Please fill all fields and select an image!";
+          return;
+        }
+
+        let formData = new FormData();
+        formData.append("image", imageFile);
+        formData.append("username", username);
+        formData.append("email", email);
+
+        if (userLocation) {
+          formData.append("latitude", userLocation.latitude);
+          formData.append("longitude", userLocation.longitude);
+        }
+
+        fetch("https://photo-gallery-xndq.onrender.com/upload", {
+          method: "POST",
+          body: formData,
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            document.getElementById("uploadResponse").innerText =
+              "Image uploaded successfully!";
+            closePopup();
+          })
+          .catch(() => {
+            document.getElementById("uploadResponse").innerText =
+              "Upload failed!";
+            closePopup();
+          });
+      }
+    </script>
   </body>
 </html>
